@@ -1,0 +1,87 @@
+---
+title: "FRED-EDA"
+author: "Sean Cerulean Johnson"
+date: "2022-06-21"
+output: pdf_document
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Libraries
+```{r, warning=FALSE,message=FALSE}
+library(RCurl)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(scales)
+```
+
+# Data
+```{r}
+temp.file <- paste(tempfile(),".xls",sep = "")
+download.file("https://fred.stlouisfed.org/graph/fredgraph.xls?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1168&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=MORTGAGE30US&scale=left&cosd=1971-04-02&coed=2022-09-29&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Weekly%2C%20Ending%20Thursday&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2022-10-01&revision_date=2022-10-01&nd=1971-04-02", temp.file, mode = "wb")
+mort30 <- read_excel(temp.file, skip = 10)
+rm(temp.file)
+```
+
+# Wrangling
+```{r}
+mort30<-mort30%>%
+  rename(date = observation_date,
+         rate = MORTGAGE30US)%>%
+  mutate(year = substr(date,1,4),
+         year_month = substr(date,1,7))%>%
+  group_by(year)%>%mutate(avg_yearly_rate = round(mean(rate),2))%>%
+  ungroup()%>%
+  group_by(year_month)%>%mutate(avg_monthly_rate = round(mean(rate),2))%>%
+  ungroup()
+```
+
+# Visuals
+
+```{r, include=FALSE, eval=FALSE, results='hide'}
+mort30%>%
+  ggplot()+
+  geom_line(aes(x=date,y=avg_yearly_rate))
+  
+```
+
+```{r}
+mort30%>%
+  ggplot()+
+  geom_line(aes(x=date,y=avg_monthly_rate/100))+
+  scale_y_continuous(labels = scales::percent)+
+  ylab("rate")
+  
+```
+
+## Barriers
+```{r}
+acceptable = .06
+manageable = .09
+xmin = min(mort30$date) 
+xmax = max(mort30$date)
+bar <- data.frame(ymin = c(-Inf,acceptable,manageable),
+                    ymax   = c(acceptable,manageable,Inf),
+                    col    = c("green","yellow","red"))
+
+```
+
+## Visual with barriers
+```{r}
+ggplot()+
+  geom_line(data=mort30,
+            aes(x=date,y=avg_monthly_rate/100))+
+  scale_y_continuous(labels = scales::percent)+
+  ylab("rate")+
+  geom_rect(data=bar,
+            aes(xmin=xmin,xmax=xmax,
+                ymin=ymin,ymax=ymax,
+                fill = col),
+            alpha=0.3,show.legend = FALSE)+
+  scale_fill_manual(values = c("darkgreen","darkred","darkorange"))
+```
+
+
