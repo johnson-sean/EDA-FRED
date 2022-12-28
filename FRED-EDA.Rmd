@@ -1,6 +1,6 @@
 ---
 title: "FRED-EDA"
-author: "Sean Cerulean Johnson"
+author: "Sean Johnson"
 date: "2022-06-21"
 output: pdf_document
 ---
@@ -19,7 +19,7 @@ library(scales)
 ```
 
 # Data
-```{r}
+```{r, message=FALSE, warning=FALSE}
 temp.file <- paste(tempfile(),".xls",sep = "")
 download.file("https://fred.stlouisfed.org/graph/fredgraph.xls?bgcolor=%23e1e9f0&chart_type=line&drp=0&fo=open%20sans&graph_bgcolor=%23ffffff&height=450&mode=fred&recession_bars=on&txtcolor=%23444444&ts=12&tts=12&width=1168&nt=0&thu=0&trc=0&show_legend=yes&show_axis_titles=yes&show_tooltip=yes&id=MORTGAGE30US&scale=left&cosd=1971-04-02&coed=2022-09-29&line_color=%234572a7&link_values=false&line_style=solid&mark_type=none&mw=3&lw=2&ost=-99999&oet=99999&mma=0&fml=a&fq=Weekly%2C%20Ending%20Thursday&fam=avg&fgst=lin&fgsnd=2020-02-01&line_index=1&transformation=lin&vintage_date=2022-10-01&revision_date=2022-10-01&nd=1971-04-02", temp.file, mode = "wb")
 mort30 <- read_excel(temp.file, skip = 10)
@@ -59,8 +59,8 @@ mort30%>%
 
 ## Barriers
 ```{r}
-acceptable = .06
-manageable = .09
+acceptable = .05
+manageable = .075
 xmin = min(mort30$date) 
 xmax = max(mort30$date)
 bar <- data.frame(ymin = c(-Inf,acceptable,manageable),
@@ -71,17 +71,19 @@ bar <- data.frame(ymin = c(-Inf,acceptable,manageable),
 
 ## Visual with barriers
 ```{r}
-ggplot()+
-  geom_line(data=mort30,
-            aes(x=date,y=avg_monthly_rate/100))+
-  scale_y_continuous(labels = scales::percent)+
-  ylab("rate")+
-  geom_rect(data=bar,
-            aes(xmin=xmin,xmax=xmax,
-                ymin=ymin,ymax=ymax,
-                fill = col),
-            alpha=0.3,show.legend = FALSE)+
-  scale_fill_manual(values = c("darkgreen","darkred","darkorange"))
+mort30%>%
+  ggplot()+
+    geom_line(aes(x=date,y=avg_monthly_rate/100))+
+    scale_y_continuous(labels = scales::percent)+
+    geom_rect(data=bar,
+              aes(xmin=xmin,xmax=xmax,
+                  ymin=ymin,ymax=ymax,
+                  fill = col),
+              alpha=0.3,show.legend = FALSE)+
+    scale_fill_manual(values = c("darkgreen","darkred","darkorange"))+
+    labs(title = "30-Year Fixed Rate Mortgage Average in the United States",
+         y = "Rate",
+         x = "Date")
 ```
 
 
